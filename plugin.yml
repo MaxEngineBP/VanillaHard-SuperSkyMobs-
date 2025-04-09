@@ -1,112 +1,15 @@
-Chances:
-  Powered-creeper: 30
-  Head-drop: 35
-  Enchant: 65
-
-# Шансы на появление полного набора брони или отдельных частей
-Armor:
-  Full-set: 65
-  
-  # Шансы появления отдельных предметов брони на мобах (если не выпал полный сет)
-  Parts:
-    Helmet: 50
-    Chestplate: 50
-    Leggings: 50
-    Boots: 50
-  
-  # Шансы появления разных типов брони, сумма всех шансов должна быть 100
-  Types:
-    Netherite:
-      Enabled: true
-      Chance: 5
-      # Шансы выпадения брони при смерти моба (0-100)
-      Drop-chance:
-        Helmet: 15
-        Chestplate: 10
-        Leggings: 10
-        Boots: 15
-    
-    Diamond:
-      Enabled: true
-      Chance: 55
-      Drop-chance:
-        Helmet: 25
-        Chestplate: 20
-        Leggings: 20
-        Boots: 25
-    
-    Golden:
-      Enabled: true
-      Chance: 15
-      Drop-chance:
-        Helmet: 40
-        Chestplate: 35
-        Leggings: 35
-        Boots: 40
-    
-    Iron:
-      Enabled: true
-      Chance: 10
-      Drop-chance:
-        Helmet: 50
-        Chestplate: 45
-        Leggings: 45
-        Boots: 50
-    
-    Leather:
-      Enabled: true
-      Chance: 15
-      Drop-chance:
-        Helmet: 70
-        Chestplate: 65
-        Leggings: 65
-        Boots: 70
-
-# Шансы на появление и выпадение оружия
-Weapons:
-  Chance: 85
-  Types:
-    Netherite:
-      Enabled: true
-      Chance: 5
-      Drop-chance:
-        Sword: 15
-        Axe: 15
-        Shovel: 15
-        Bow: 25
-    
-    Diamond:
-      Enabled: true
-      Chance: 55
-      Drop-chance:
-        Sword: 25
-        Axe: 25
-        Shovel: 25
-        Bow: 35
-    
-    Golden:
-      Enabled: true
-      Chance: 15
-      Drop-chance:
-        Sword: 40
-        Axe: 40
-        Shovel: 40
-        Bow: 50
-    
-    Iron:
-      Enabled: true
-      Chance: 10
-      Drop-chance:
-        Sword: 50
-        Axe: 50
-        Shovel: 50
-        Bow: 60
-    
-    Wooden:
-      Enabled: true
-      Chance: 15
-      Drop-chance:
-        Sword: 70
-        Axe: 70
-        Shovel: 70
-        Bow: 80
+name: SuperSkyMobs
+main: com.maxengine.superskymobs.SuperSkyMobsPlugin
+version: 1.0.0
+api-version: '1.17'
+description: Give mobs random equipment in the skyblock world
+author: MaxEngine
+commands:
+  superskymobs:
+    description: Main command for SuperSkyMobs
+    usage: /superskymobs reload
+    permission: superskymobs.commands.reload
+permissions:
+  superskymobs.commands.reload:
+    description: Permission to reload the plugin configuration
+    default: op
