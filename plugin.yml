@@ -1,0 +1,12 @@
+name: SuperSkyMobs
+main: com.maxengine.superskymobs.SuperSkyMobsPlugin
+description: Spawn entities with random armour!
+author: MaxEngine
+version: 1.0.0
+api-version: 1.16
+
+commands:
+  superskymobs:
+    aliases: [sky]
+    description: reload command
+    permission: superskymobs.commands.reload
