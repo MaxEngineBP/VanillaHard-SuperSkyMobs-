@@ -31,6 +31,15 @@ public class EntityDeathListener implements Listener {
       case CREEPER:
         material = Material.CREEPER_HEAD;
         break;
+      case PIGLIN:
+        // Проверяем доступность Material.PIGLIN_HEAD для версии 1.21
+        try {
+          material = Material.valueOf("PIGLIN_HEAD");
+        } catch (IllegalArgumentException e) {
+          // Если нет такого значения в Enum, значит версия не поддерживает эту голову
+          material = null;
+        }
+        break;
     } 
     if (material == null)
       return; 
