@@ -43,13 +43,16 @@ public class CreatureSpawnListener implements Listener {
     int chance;
     EntityType entityType = event.getEntityType();
     LivingEntity entity = event.getEntity();
+    
+    // Проверяем тип сущности и применяем соответствующую логику
     switch (entityType) {
-      case HELMET:
+      case CREEPER:
         ((Creeper)entity).setPowered(Random.checkChance(this.configuration.getInt("Chances.Powered-creeper"), 100));
         return;
-      case CHESTPLATE:
-      case LEGGINGS:
-      case BOOTS:
+      case ZOMBIE:
+      case ZOMBIE_VILLAGER:
+      case HUSK:
+      case DROWNED:
         equipment = entity.getEquipment();
         if (equipment == null)
           return; 
@@ -65,8 +68,8 @@ public class CreatureSpawnListener implements Listener {
           equipment.setItemInMainHand(getItemStack(EquipmentType.SWORD, null));
         } 
         return;
-      case SWORD:
-      case BOW:
+      case SKELETON:
+      case STRAY:
         equipment = entity.getEquipment();
         if (equipment == null)
           return; 
@@ -75,8 +78,8 @@ public class CreatureSpawnListener implements Listener {
           return; 
         equipment.setItemInMainHand(getItemStack(EquipmentType.BOW, null));
         return;
-      case AXE:
-      case SHOVEL:
+      case WITHER_SKELETON:
+      case PIGLIN:
         equipment = entity.getEquipment();
         if (equipment == null)
           return; 
@@ -110,6 +113,12 @@ public class CreatureSpawnListener implements Listener {
     String material = "";
     int chance = Random.generate(100);
     material = (chance <= 15) ? (wooden ? "WOODEN_" : "LEATHER_") : ((chance <= 25) ? "IRON_" : ((chance <= 40) ? "GOLDEN_" : "DIAMOND_"));
+    
+    // Добавляем шанс на незеритовую броню для версии 1.16+
+    if (chance > 40 && chance <= 45) {
+      material = "NETHERITE_";
+    }
+    
     return material;
   }
   
