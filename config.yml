@@ -1,10 +1,136 @@
+# Global chances
 Chances:
   Powered-creeper: 30
-  Armor:
-    Full-set: 65
+  Enchant: 65
+
+# Head drop configuration
+Heads:
+  Enabled: true
+  # Global head drop chance (used as default if not specified per mob type)
+  Head-drop: 35
+  # Per-mob type head drop chances
+  Types:
+    ZOMBIE:
+      Chance: 35
+    SKELETON: 
+      Chance: 35
+    CREEPER:
+      Chance: 35
+    WITHER_SKELETON:
+      Chance: 15
+    PIGLIN:
+      Chance: 25
+
+# Armor configuration
+Armor:
+  # Chance for full set of same type to spawn (0-100)
+  Full-set: 65
+  
+  # Chances for individual armor pieces if full set doesn't spawn (0-100)
+  Parts:
     Helmet: 50
     Chestplate: 50
     Leggings: 50
     Boots: 50
-  Head-drop: 35
-  Enchant: 65
+  
+  # Different armor material types, sum of chances should be 100
+  Types:
+    Netherite:
+      # Enable/disable this armor type
+      Enabled: true
+      # Chance for this armor type to spawn (relative to other enabled types)
+      Chance: 5
+      # Drop chance when mob dies (0-100)
+      Drop-chance:
+        Helmet: 15
+        Chestplate: 10
+        Leggings: 10
+        Boots: 15
+    
+    Diamond:
+      Enabled: true
+      Chance: 55
+      Drop-chance:
+        Helmet: 25
+        Chestplate: 20
+        Leggings: 20
+        Boots: 25
+    
+    Golden:
+      Enabled: true
+      Chance: 15
+      Drop-chance:
+        Helmet: 40
+        Chestplate: 35
+        Leggings: 35
+        Boots: 40
+    
+    Iron:
+      Enabled: true
+      Chance: 10
+      Drop-chance:
+        Helmet: 50
+        Chestplate: 45
+        Leggings: 45
+        Boots: 50
+    
+    Leather:
+      Enabled: true
+      Chance: 15
+      Drop-chance:
+        Helmet: 70
+        Chestplate: 65
+        Leggings: 65
+        Boots: 70
+
+# Weapon configuration
+Weapons:
+  # Global chance for weapon to spawn (0-100)
+  Chance: 85
+  
+  # Different weapon material types, sum of chances should be 100
+  Types:
+    Netherite:
+      Enabled: true
+      Chance: 5
+      Drop-chance:
+        Sword: 15
+        Axe: 15
+        Shovel: 15
+        Bow: 25
+    
+    Diamond:
+      Enabled: true
+      Chance: 55
+      Drop-chance:
+        Sword: 25
+        Axe: 25
+        Shovel: 25
+        Bow: 35
+    
+    Golden:
+      Enabled: true
+      Chance: 15
+      Drop-chance:
+        Sword: 40
+        Axe: 40
+        Shovel: 40
+        Bow: 50
+    
+    Iron:
+      Enabled: true
+      Chance: 10
+      Drop-chance:
+        Sword: 50
+        Axe: 50
+        Shovel: 50
+        Bow: 60
+    
+    Wooden:
+      Enabled: true
+      Chance: 15
+      Drop-chance:
+        Sword: 70
+        Axe: 70
+        Shovel: 70
+        Bow: 80
