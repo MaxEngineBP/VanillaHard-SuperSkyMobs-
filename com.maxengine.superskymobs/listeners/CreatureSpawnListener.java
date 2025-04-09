@@ -1,8 +1,11 @@
 package com.maxengine.superskymobs.listeners;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Creeper;
@@ -13,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import com.maxengine.superskymobs.data.EquipmentType;
 import com.maxengine.superskymobs.utils.Random;
 
@@ -37,10 +41,37 @@ public class CreatureSpawnListener implements Listener {
   
   private FileConfiguration configuration;
   
+  // Класс для хранения информации о типе брони/оружия
+  private class MaterialInfo {
+    private String prefix;
+    private double chance;
+    private Map<String, Float> dropChances;
+    
+    public MaterialInfo(String prefix, double chance, Map<String, Float> dropChances) {
+      this.prefix = prefix;
+      this.chance = chance;
+      this.dropChances = dropChances;
+    }
+    
+    public String getPrefix() {
+      return prefix;
+    }
+    
+    public double getChance() {
+      return chance;
+    }
+    
+    public float getDropChance(String part) {
+      return dropChances.getOrDefault(part, 0.0f);
+    }
+  }
+  
+  // Списки типов брони и оружия
+  private List<MaterialInfo> armorMaterials = new ArrayList<>();
+  private List<MaterialInfo> weaponMaterials = new ArrayList<>();
+  
   @EventHandler
   public void onSpawn(CreatureSpawnEvent event) {
-    EntityEquipment equipment;
-    int chance;
     EntityType entityType = event.getEntityType();
     LivingEntity entity = event.getEntity();
     
@@ -53,19 +84,28 @@ public class CreatureSpawnListener implements Listener {
       case ZOMBIE_VILLAGER:
       case HUSK:
       case DROWNED:
-        equipment = entity.getEquipment();
+        EntityEquipment equipment = entity.getEquipment();
         if (equipment == null)
           return; 
+        
         generateArmor(equipment);
-        if (!Random.checkChance(85, 100) || entityType == EntityType.DROWNED)
-          return; 
-        chance = Random.generate(100);
+        
+        if (!Random.checkChance(this.configuration.getInt("Weapons.Chance"), 100) || entityType == EntityType.DROWNED)
+          return;
+        
+        int chance = Random.generate(100);
         if (chance <= 20) {
-          equipment.setItemInMainHand(getItemStack(EquipmentType.AXE, null));
+          ItemStack axe = getWeapon(EquipmentType.AXE);
+          equipment.setItemInMainHand(axe);
+          equipment.setItemInMainHandDropChance(getWeaponDropChance(axe, "Axe"));
         } else if (chance <= 25) {
-          equipment.setItemInMainHand(getItemStack(EquipmentType.SHOVEL, null));
+          ItemStack shovel = getWeapon(EquipmentType.SHOVEL);
+          equipment.setItemInMainHand(shovel);
+          equipment.setItemInMainHandDropChance(getWeaponDropChance(shovel, "Shovel"));
         } else {
-          equipment.setItemInMainHand(getItemStack(EquipmentType.SWORD, null));
+          ItemStack sword = getWeapon(EquipmentType.SWORD);
+          equipment.setItemInMainHand(sword);
+          equipment.setItemInMainHandDropChance(getWeaponDropChance(sword, "Sword"));
         } 
         return;
       case SKELETON:
@@ -73,53 +113,257 @@ public class CreatureSpawnListener implements Listener {
         equipment = entity.getEquipment();
         if (equipment == null)
           return; 
+        
         generateArmor(equipment);
-        if (!Random.checkChance(85, 100))
-          return; 
-        equipment.setItemInMainHand(getItemStack(EquipmentType.BOW, null));
+        
+        if (!Random.checkChance(this.configuration.getInt("Weapons.Chance"), 100))
+          return;
+        
+        ItemStack bow = getWeapon(EquipmentType.BOW);
+        equipment.setItemInMainHand(bow);
+        equipment.setItemInMainHandDropChance(getWeaponDropChance(bow, "Bow"));
         return;
       case WITHER_SKELETON:
       case PIGLIN:
         equipment = entity.getEquipment();
         if (equipment == null)
           return; 
-        if (!Random.checkChance(85, 100))
-          break; 
-        equipment.setItemInMainHand(getItemStack(EquipmentType.SWORD, null));
+        
+        generateArmor(equipment);
+        
+        if (!Random.checkChance(this.configuration.getInt("Weapons.Chance"), 100))
+          return;
+        
+        ItemStack sword = getWeapon(EquipmentType.SWORD);
+        equipment.setItemInMainHand(sword);
+        equipment.setItemInMainHandDropChance(getWeaponDropChance(sword, "Sword"));
         break;
     } 
   }
   
   private void generateArmor(EntityEquipment equipment) {
-    String material = generateMaterial(false);
-    if (Random.checkChance(this.configuration.getInt("Chances.Armor.Full-set"), 100)) {
-      equipment.setHelmet(getItemStack(EquipmentType.HELMET, material));
-      equipment.setChestplate(getItemStack(EquipmentType.CHESTPLATE, material));
-      equipment.setLeggings(getItemStack(EquipmentType.LEGGINGS, material));
-      equipment.setBoots(getItemStack(EquipmentType.BOOTS, material));
+    if (Random.checkChance(this.configuration.getInt("Armor.Full-set"), 100)) {
+      // Генерируем полный комплект одного типа
+      String material = generateArmorMaterial();
+      
+      if (material == null) return;
+      
+      ItemStack helmet = getArmorItem(EquipmentType.HELMET, material);
+      ItemStack chestplate = getArmorItem(EquipmentType.CHESTPLATE, material);
+      ItemStack leggings = getArmorItem(EquipmentType.LEGGINGS, material);
+      ItemStack boots = getArmorItem(EquipmentType.BOOTS, material);
+      
+      equipment.setHelmet(helmet);
+      equipment.setChestplate(chestplate);
+      equipment.setLeggings(leggings);
+      equipment.setBoots(boots);
+      
+      // Устанавливаем шансы выпадения
+      equipment.setHelmetDropChance(getArmorDropChance(helmet, "Helmet"));
+      equipment.setChestplateDropChance(getArmorDropChance(chestplate, "Chestplate"));
+      equipment.setLeggingsDropChance(getArmorDropChance(leggings, "Leggings"));
+      equipment.setBootsDropChance(getArmorDropChance(boots, "Boots"));
+      
       return;
-    } 
-    if (Random.checkChance(this.configuration.getInt("Chances.Armor.Helmet"), 100))
-      equipment.setHelmet(getItemStack(EquipmentType.HELMET, material)); 
-    if (Random.checkChance(this.configuration.getInt("Chances.Armor.Chestplate"), 100))
-      equipment.setChestplate(getItemStack(EquipmentType.CHESTPLATE, material)); 
-    if (Random.checkChance(this.configuration.getInt("Chances.Armor.Leggings"), 100))
-      equipment.setLeggings(getItemStack(EquipmentType.LEGGINGS, material)); 
-    if (Random.checkChance(this.configuration.getInt("Chances.Armor.Boots"), 100))
-      equipment.setBoots(getItemStack(EquipmentType.BOOTS, material)); 
-  }
-  
-  private String generateMaterial(boolean wooden) {
-    String material = "";
-    int chance = Random.generate(100);
-    material = (chance <= 15) ? (wooden ? "WOODEN_" : "LEATHER_") : ((chance <= 25) ? "IRON_" : ((chance <= 40) ? "GOLDEN_" : "DIAMOND_"));
-    
-    // Добавляем шанс на незеритовую броню для версии 1.16+
-    if (chance > 40 && chance <= 45) {
-      material = "NETHERITE_";
     }
     
-    return material;
+    // Генерируем части брони по отдельности
+    if (Random.checkChance(this.configuration.getInt("Armor.Parts.Helmet"), 100)) {
+      ItemStack helmet = getArmorItem(EquipmentType.HELMET, null);
+      equipment.setHelmet(helmet);
+      equipment.setHelmetDropChance(getArmorDropChance(helmet, "Helmet"));
+    }
+    
+    if (Random.checkChance(this.configuration.getInt("Armor.Parts.Chestplate"), 100)) {
+      ItemStack chestplate = getArmorItem(EquipmentType.CHESTPLATE, null);
+      equipment.setChestplate(chestplate);
+      equipment.setChestplateDropChance(getArmorDropChance(chestplate, "Chestplate"));
+    }
+    
+    if (Random.checkChance(this.configuration.getInt("Armor.Parts.Leggings"), 100)) {
+      ItemStack leggings = getArmorItem(EquipmentType.LEGGINGS, null);
+      equipment.setLeggings(leggings);
+      equipment.setLeggingsDropChance(getArmorDropChance(leggings, "Leggings"));
+    }
+    
+    if (Random.checkChance(this.configuration.getInt("Armor.Parts.Boots"), 100)) {
+      ItemStack boots = getArmorItem(EquipmentType.BOOTS, null);
+      equipment.setBoots(boots);
+      equipment.setBootsDropChance(getArmorDropChance(boots, "Boots"));
+    }
+  }
+  
+  private String generateArmorMaterial() {
+    if (armorMaterials.isEmpty()) {
+      return null;
+    }
+    
+    // Используем колесо рулетки для выбора материала с учетом шансов
+    double totalChance = 0;
+    for (MaterialInfo material : armorMaterials) {
+      totalChance += material.getChance();
+    }
+    
+    double roll = Random.generate(100);
+    double currentPos = 0;
+    
+    for (MaterialInfo material : armorMaterials) {
+      currentPos += material.getChance();
+      if (roll <= currentPos) {
+        return material.getPrefix();
+      }
+    }
+    
+    // Возвращаем последний материал, если что-то пошло не так
+    return armorMaterials.get(armorMaterials.size() - 1).getPrefix();
+  }
+  
+  private String generateWeaponMaterial() {
+    if (weaponMaterials.isEmpty()) {
+      return "WOODEN_";
+    }
+    
+    // Используем колесо рулетки для выбора материала с учетом шансов
+    double totalChance = 0;
+    for (MaterialInfo material : weaponMaterials) {
+      totalChance += material.getChance();
+    }
+    
+    double roll = Random.generate(100);
+    double currentPos = 0;
+    
+    for (MaterialInfo material : weaponMaterials) {
+      currentPos += material.getChance();
+      if (roll <= currentPos) {
+        return material.getPrefix();
+      }
+    }
+    
+    // Возвращаем последний материал, если что-то пошло не так
+    return weaponMaterials.get(weaponMaterials.size() - 1).getPrefix();
+  }
+  
+  private ItemStack getArmorItem(EquipmentType equipmentType, String material) {
+    String materialName;
+    
+    if (material == null) {
+      material = generateArmorMaterial();
+    }
+    
+    materialName = material + equipmentType.name();
+    ItemStack itemStack = new ItemStack(Material.valueOf(materialName));
+    
+    if (Random.checkChance(this.configuration.getInt("Chances.Enchant"), 100)) {
+      Enchantment[] enchantments = null;
+      switch (equipmentType) {
+        case HELMET:
+          enchantments = HELMET_ENCHANTMENTS;
+          break;
+        case CHESTPLATE:
+          enchantments = CHESTPLATE_ENCHANTMENTS;
+          break;
+        case LEGGINGS:
+          enchantments = LEGGINGS_ENCHANTMENTS;
+          break;
+        case BOOTS:
+          enchantments = BOOTS_ENCHANTMENTS;
+          break;
+      }
+      
+      if (enchantments != null) {
+        Map.Entry<Enchantment, Integer> generatedEnchantment = generateEnchantment(enchantments, false);
+        itemStack.addUnsafeEnchantment(generatedEnchantment.getKey(), generatedEnchantment.getValue());
+      }
+    }
+    
+    // Сохраняем тип материала в метаданных предмета для определения шанса выпадения
+    ItemMeta meta = itemStack.getItemMeta();
+    if (meta != null) {
+      meta.setLocalizedName(material.toLowerCase());
+      itemStack.setItemMeta(meta);
+    }
+    
+    return itemStack;
+  }
+  
+  private ItemStack getWeapon(EquipmentType equipmentType) {
+    String materialPrefix = generateWeaponMaterial();
+    String materialName;
+    
+    if (equipmentType == EquipmentType.BOW) {
+      materialName = "BOW";
+    } else {
+      materialName = materialPrefix + equipmentType.name();
+    }
+    
+    ItemStack itemStack = new ItemStack(Material.valueOf(materialName));
+    
+    if (Random.checkChance(this.configuration.getInt("Chances.Enchant"), 100)) {
+      Enchantment[] enchantments = null;
+      switch (equipmentType) {
+        case SWORD:
+          enchantments = SWORD_ENCHANTMENTS;
+          break;
+        case BOW:
+          enchantments = BOW_ENCHANTMENTS;
+          break;
+        case AXE:
+          enchantments = AXE_ENCHANTMENTS;
+          break;
+        case SHOVEL:
+          enchantments = SHOVEL_ENCHANTMENTS;
+          break;
+      }
+      
+      if (enchantments != null) {
+        Map.Entry<Enchantment, Integer> generatedEnchantment = generateEnchantment(enchantments, 
+                                                                                  (equipmentType == EquipmentType.BOW || equipmentType == EquipmentType.SWORD));
+        itemStack.addUnsafeEnchantment(generatedEnchantment.getKey(), generatedEnchantment.getValue());
+      }
+    }
+    
+    // Сохраняем тип материала в метаданных предмета для определения шанса выпадения
+    ItemMeta meta = itemStack.getItemMeta();
+    if (meta != null) {
+      meta.setLocalizedName(materialPrefix.toLowerCase());
+      itemStack.setItemMeta(meta);
+    }
+    
+    return itemStack;
+  }
+  
+  private float getArmorDropChance(ItemStack item, String partName) {
+    if (item == null || item.getItemMeta() == null || item.getItemMeta().getLocalizedName().isEmpty()) {
+      return 0.0f;
+    }
+    
+    String materialKey = item.getItemMeta().getLocalizedName().toUpperCase().replace("_", ""); 
+    
+    for (MaterialInfo material : armorMaterials) {
+      String prefix = material.getPrefix().replace("_", "").toUpperCase();
+      if (prefix.equals(materialKey)) {
+        return material.getDropChance(partName) / 100.0f; // Конвертируем из процентов в коэффициент (0-1)
+      }
+    }
+    
+    return 0.0f;
+  }
+  
+  private float getWeaponDropChance(ItemStack item, String weaponType) {
+    if (item == null || item.getItemMeta() == null || item.getItemMeta().getLocalizedName().isEmpty()) {
+      return 0.0f;
+    }
+    
+    String materialKey = item.getItemMeta().getLocalizedName().toUpperCase().replace("_", "");
+    
+    for (MaterialInfo material : weaponMaterials) {
+      String prefix = material.getPrefix().replace("_", "").toUpperCase();
+      if (prefix.equals(materialKey)) {
+        return material.getDropChance(weaponType) / 100.0f; // Конвертируем из процентов в коэффициент (0-1)
+      }
+    }
+    
+    return 0.0f;
   }
   
   private Map.Entry<Enchantment, Integer> generateEnchantment(Enchantment[] enchantments, boolean six) {
@@ -144,47 +388,90 @@ public class CreatureSpawnListener implements Listener {
     } else if (chance <= 60) {
       enchantmentLevel = 2;
     } 
-    return new AbstractMap.SimpleEntry<>(enchantments[Random.generate(enchantments.length - 1)], Integer.valueOf(enchantmentLevel));
+    
+    int index = Random.generate(enchantments.length - 1);
+    if (index < 0) index = 0;
+    if (index >= enchantments.length) index = enchantments.length - 1;
+    
+    return new AbstractMap.SimpleEntry<>(enchantments[index], Integer.valueOf(enchantmentLevel));
   }
   
-  private ItemStack getItemStack(EquipmentType equipmentType, String material) {
-    String materialName = (equipmentType == EquipmentType.BOW) ? "BOW" : (((material == null) ? generateMaterial((equipmentType == EquipmentType.SWORD || equipmentType == EquipmentType.SHOVEL || equipmentType == EquipmentType.AXE)) : material) + equipmentType.name());
-    ItemStack itemStack = new ItemStack(Material.valueOf(materialName));
-    if (Random.checkChance(this.configuration.getInt("Chances.Enchant"), 100)) {
-      Enchantment[] enchantments = null;
-      switch (equipmentType) {
-        case HELMET:
-          enchantments = HELMET_ENCHANTMENTS;
-          break;
-        case CHESTPLATE:
-          enchantments = CHESTPLATE_ENCHANTMENTS;
-          break;
-        case LEGGINGS:
-          enchantments = LEGGINGS_ENCHANTMENTS;
-          break;
-        case BOOTS:
-          enchantments = BOOTS_ENCHANTMENTS;
-          break;
-        case SWORD:
-          enchantments = SWORD_ENCHANTMENTS;
-          break;
-        case BOW:
-          enchantments = BOW_ENCHANTMENTS;
-          break;
-        case AXE:
-          enchantments = AXE_ENCHANTMENTS;
-          break;
-        case SHOVEL:
-          enchantments = SHOVEL_ENCHANTMENTS;
-          break;
-      } 
-      Map.Entry<Enchantment, Integer> generatedEnchantment = generateEnchantment(enchantments, (equipmentType == EquipmentType.BOW || equipmentType == EquipmentType.SWORD));
-      itemStack.addUnsafeEnchantment(generatedEnchantment.getKey(), ((Integer)generatedEnchantment.getValue()).intValue());
-    } 
-    return itemStack;
+  // Загружаем данные о материалах из конфигурации
+  private void loadMaterialsFromConfig() {
+    armorMaterials.clear();
+    weaponMaterials.clear();
+    
+    // Загрузка материалов брони
+    ConfigurationSection armorSection = configuration.getConfigurationSection("Armor.Types");
+    if (armorSection != null) {
+      for (String key : armorSection.getKeys(false)) {
+        if (!configuration.getBoolean("Armor.Types." + key + ".Enabled", true)) {
+          continue;
+        }
+        
+        String prefix;
+        if (key.equalsIgnoreCase("Leather")) {
+          prefix = "LEATHER_";
+        } else if (key.equalsIgnoreCase("Wooden")) {
+          prefix = "WOODEN_";
+        } else {
+          prefix = key.toUpperCase() + "_";
+        }
+        
+        double chance = configuration.getDouble("Armor.Types." + key + ".Chance", 0);
+        Map<String, Float> dropChances = new java.util.HashMap<>();
+        
+        ConfigurationSection dropSection = configuration.getConfigurationSection("Armor.Types." + key + ".Drop-chance");
+        if (dropSection != null) {
+          for (String part : dropSection.getKeys(false)) {
+            float dropChance = (float) configuration.getDouble("Armor.Types." + key + ".Drop-chance." + part, 0);
+            dropChances.put(part, dropChance);
+          }
+        }
+        
+        armorMaterials.add(new MaterialInfo(prefix, chance, dropChances));
+      }
+    }
+    
+    // Загрузка материалов оружия
+    ConfigurationSection weaponSection = configuration.getConfigurationSection("Weapons.Types");
+    if (weaponSection != null) {
+      for (String key : weaponSection.getKeys(false)) {
+        if (!configuration.getBoolean("Weapons.Types." + key + ".Enabled", true)) {
+          continue;
+        }
+        
+        String prefix;
+        if (key.equalsIgnoreCase("Wooden")) {
+          prefix = "WOODEN_";
+        } else {
+          prefix = key.toUpperCase() + "_";
+        }
+        
+        double chance = configuration.getDouble("Weapons.Types." + key + ".Chance", 0);
+        Map<String, Float> dropChances = new java.util.HashMap<>();
+        
+        ConfigurationSection dropSection = configuration.getConfigurationSection("Weapons.Types." + key + ".Drop-chance");
+        if (dropSection != null) {
+          for (String weapon : dropSection.getKeys(false)) {
+            float dropChance = (float) configuration.getDouble("Weapons.Types." + key + ".Drop-chance." + weapon, 0);
+            dropChances.put(weapon, dropChance);
+          }
+        }
+        
+        weaponMaterials.add(new MaterialInfo(prefix, chance, dropChances));
+      }
+    }
   }
   
   public CreatureSpawnListener(FileConfiguration configuration) {
     this.configuration = configuration;
+    loadMaterialsFromConfig();
+  }
+  
+  // Метод для перезагрузки конфигурации
+  public void reloadConfig(FileConfiguration configuration) {
+    this.configuration = configuration;
+    loadMaterialsFromConfig();
   }
 }
