@@ -3,7 +3,7 @@ package com.maxengine.superskymobs.commands;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import ru.xezard.vanillahard.VanillaHardPlugin;
+import com.maxengine.superskymobs.SuperSkyMobsPlugin;
 
 public class SuperSkyMobsCommand implements CommandExecutor {
   private SuperSkyMobsPlugin plugin;
